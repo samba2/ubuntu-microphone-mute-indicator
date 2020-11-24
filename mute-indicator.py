@@ -9,17 +9,64 @@ from pathlib import PosixPath
 from abc import ABC, abstractmethod
 
 
-@contextmanager
-def pid_file():
-    _PID_FILE_PATH = PosixPath("~/.mute-indicator.pid").expanduser()
-    _pid_file = open(_PID_FILE_PATH, "w")
+class MuteIndicator:
 
-    try:
-        _pid_file.write(str(os.getpid()))
-        _pid_file.close()
-        yield _pid_file
-    finally:
-        os.remove(_PID_FILE_PATH)
+    _MUTE_SIGNAL = SIGUSR1
+    _SPEAK_SIGNAL = SIGUSR2
+    _REFRESH_AFTER_MILLISECONDS = 200
+
+    def __init__(self):
+        self._root = Tk()
+        self._no_connection_canvas = NoConnectionCanvas(self._root)
+        self._speak_canvas = SpeakCanvas(self._root)
+        self._mute_canvas = MuteCanvas(self._root)
+
+    def run(self):
+        with MuteIndicator.pid_file():
+            self._initialize()
+            self._root.mainloop()
+
+    @staticmethod
+    @contextmanager
+    def pid_file():
+        _PID_FILE_PATH = PosixPath("~/.mute-indicator.pid").expanduser()
+        _pid_file = open(_PID_FILE_PATH, "w")
+
+        try:
+            _pid_file.write(str(os.getpid()))
+            _pid_file.close()
+            yield _pid_file
+        finally:
+            os.remove(_PID_FILE_PATH)
+
+    def _initialize(self):
+        # root.wait_visibility(root)
+        self._root.attributes('-topmost',True)
+        #self._root.attributes('-alpha', 0.8)
+        # root.tk.call('tk', 'scaling', 1.0)
+        self._speak_canvas.draw()
+        self._mute_canvas.draw()
+        self._no_connection_canvas.draw()
+        self._no_connection_canvas.show()
+
+        self._root.after(self._REFRESH_AFTER_MILLISECONDS, self._poll)
+        signal.signal(self._MUTE_SIGNAL, self._handle_signal)
+        signal.signal(self._SPEAK_SIGNAL, self._handle_signal)
+
+    # force refresh
+    def _poll(self):
+        self._root.after(self._REFRESH_AFTER_MILLISECONDS, self._poll)
+
+    def _handle_signal(self, signum, unused):
+        if signum == self._MUTE_SIGNAL:
+            self._no_connection_canvas.hide()
+            self._speak_canvas.hide()
+            self._mute_canvas.show()
+
+        elif signum == self._SPEAK_SIGNAL:
+            self._no_connection_canvas.hide()
+            self._mute_canvas.hide()
+            self._speak_canvas.show()
 
 
 class IndicatorCanvas(ABC):
@@ -83,53 +130,6 @@ class MuteCanvas(IndicatorCanvas):
         self._canvas.create_oval(x-3, y-3, x+3, y+3, fill='gray30', outline='gray30')
         self._canvas.create_oval(x-2, y-2, x+2, y+2, fill='gray40', outline='gray40')
 
-
-class MuteIndicator:
-
-    _MUTE_SIGNAL = SIGUSR1
-    _SPEAK_SIGNAL = SIGUSR2
-    _REFRESH_AFTER_MILLISECONDS = 200
-
-    def __init__(self):
-        self._root = Tk()
-        self._no_connection_canvas = NoConnectionCanvas(self._root)
-        self._speak_canvas = SpeakCanvas(self._root)
-        self._mute_canvas = MuteCanvas(self._root)
-
-    def run(self):
-        with pid_file():
-            self._initialize()
-            self._root.mainloop()
-
-    def _initialize(self):
-        # root.wait_visibility(root)
-        self._root.attributes('-topmost',True)
-        #self._root.attributes('-alpha', 0.8)
-        # root.tk.call('tk', 'scaling', 1.0)
-        self._speak_canvas.draw()
-        self._mute_canvas.draw()
-        self._no_connection_canvas.draw()
-        self._no_connection_canvas.show()
-
-        self._root.after(self._REFRESH_AFTER_MILLISECONDS, self._poll)
-        signal.signal(self._MUTE_SIGNAL, self._handle_signal)
-        signal.signal(self._SPEAK_SIGNAL, self._handle_signal)
-
-    # force refresh
-    def _poll(self):
-        self._root.after(self._REFRESH_AFTER_MILLISECONDS, self._poll)
-
-    def _handle_signal(self, signum, unused):
-        if signum == self._MUTE_SIGNAL:
-            self._no_connection_canvas.hide()
-            self._speak_canvas.hide()
-            self._mute_canvas.show()
-
-        elif signum == self._SPEAK_SIGNAL:
-            self._no_connection_canvas.hide()
-            self._mute_canvas.hide()
-            self._speak_canvas.show()
-    
 
 if __name__ == "__main__":
     MuteIndicator().run()    
