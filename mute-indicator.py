@@ -16,6 +16,8 @@ class MuteIndicator:
 
     # root.tk.call('tk', 'scaling', 1.0)
     _speak_canvas = tk.Canvas(_root, width=100, height=100)
+    _mute_canvas = tk.Canvas(_root, width=100, height=100)
+    _no_connection_canvas = tk.Canvas(_root, width=100, height=100)
 
     _LED_POSITIONS=[
         (28, 14), (40, 12), (60, 12), (72, 14), # line 1
@@ -31,9 +33,11 @@ class MuteIndicator:
     SPEAK_LED_LAYER_COLORS = [(5, 'red'), (4, 'goldenrod'), (3, 'yellow'), (2, 'linen')]
     
     def run(self):
-        self.draw_speak_canvas()
+        self._draw_speak_canvas()
+        self._draw_mute_canvas()
+        self._draw_no_connection_canvas()
 
-        self._speak_canvas.pack()
+        self._no_connection_canvas.pack()
 
         self._root.after(500, self._poll)
         # mute 
@@ -43,32 +47,48 @@ class MuteIndicator:
 
         self._root.mainloop()
 
-    def draw_speak_canvas(self):
+    def _draw_speak_canvas(self):
         self._speak_canvas.create_rectangle(0, 0, 100, 100, fill='black', outline='black')
         self._speak_canvas.create_oval(0,0,100,100, fill='red4', outline='red4')
     
         for (x, y) in self._LED_POSITIONS:
-            self._create_led(x, y)
+            self._draw_speak_led(x, y)
 
-    def _create_led(self, x, y):
+    def _draw_speak_led(self, x, y):
         for (layer_offset, color) in self.SPEAK_LED_LAYER_COLORS:
             self._speak_canvas.create_oval(x-layer_offset,y-layer_offset,x+layer_offset,y+layer_offset, fill=color, outline=color)
     
+    def _draw_mute_canvas(self):
+        self._mute_canvas.create_rectangle(0, 0, 100, 100, fill='black', outline='black')
+        self._mute_canvas.create_oval(0,0,100,100, fill='brown4', outline='brown4')
+        
+        for (x, y) in self._LED_POSITIONS:
+            self._draw_mute_led(x, y)
+
+    def _draw_mute_led(self, x, y):
+        self._mute_canvas.create_oval(x-3, y-3, x+3, y+3, fill='gray30', outline='gray30')
+        self._mute_canvas.create_oval(x-2, y-2, x+2, y+2, fill='gray40', outline='gray40')
+
+
+    def _draw_no_connection_canvas(self):
+        self._no_connection_canvas.create_rectangle(0, 0, 100, 100, fill='gray40', outline='gray40')
+        self._no_connection_canvas.create_text(50, 50, fill="black", font=("Times", 9),
+                        text="Awaiting update")
+
     # force refresh
     def _poll(self):
         self._root.after(500, self._poll)
 
     def _handle_signal(self, signum, unused):
         if signum == SIGUSR1:
-            pass
-            # self._speak_label.pack_forget()
-            # mute_label.pack()
+            self._no_connection_canvas.pack_forget()
+            self._speak_canvas.pack_forget()
+            self._mute_canvas.pack()
 
         elif signum == SIGUSR2:
-            pass
-            # mute_label.pack_forget()
-            # speak_label.pack()
-
+            self._no_connection_canvas.pack_forget()
+            self._mute_canvas.pack_forget()
+            self._speak_canvas.pack()
     
 if __name__ == "__main__":
     MuteIndicator().run()    
