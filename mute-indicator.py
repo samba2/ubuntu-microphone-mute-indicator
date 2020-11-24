@@ -7,6 +7,24 @@ from tkinter import NW, Label, Frame
 import signal
 from signal import SIGUSR1, SIGUSR2
 from typing import NamedTuple
+from contextlib import contextmanager
+import os
+from pathlib import PosixPath
+from os.path import expanduser
+
+
+@contextmanager
+def pid_file():
+    _PID_FILE_PATH = PosixPath("~/.mute-indicator.pid").expanduser()
+    _pid_file = open(_PID_FILE_PATH, "w")
+
+    try:
+        _pid_file.write(str(os.getpid()))
+        _pid_file.close()
+        yield _pid_file
+    finally:
+        os.remove(_PID_FILE_PATH)
+
 
 class MuteIndicator:
     _root = tk.Tk()
@@ -33,19 +51,20 @@ class MuteIndicator:
     SPEAK_LED_LAYER_COLORS = [(5, 'red'), (4, 'goldenrod'), (3, 'yellow'), (2, 'linen')]
     
     def run(self):
-        self._draw_speak_canvas()
-        self._draw_mute_canvas()
-        self._draw_no_connection_canvas()
+        with pid_file():
+            self._draw_speak_canvas()
+            self._draw_mute_canvas()
+            self._draw_no_connection_canvas()
 
-        self._no_connection_canvas.pack()
+            self._no_connection_canvas.pack()
 
-        self._root.after(500, self._poll)
-        # mute 
-        signal.signal(SIGUSR1, self._handle_signal)
-        # speak
-        signal.signal(SIGUSR2, self._handle_signal)
+            self._root.after(500, self._poll)
+            # mute 
+            signal.signal(SIGUSR1, self._handle_signal)
+            # speak
+            signal.signal(SIGUSR2, self._handle_signal)
 
-        self._root.mainloop()
+            self._root.mainloop()
 
     def _draw_speak_canvas(self):
         self._speak_canvas.create_rectangle(0, 0, 100, 100, fill='black', outline='black')
@@ -90,5 +109,6 @@ class MuteIndicator:
             self._mute_canvas.pack_forget()
             self._speak_canvas.pack()
     
+
 if __name__ == "__main__":
     MuteIndicator().run()    
