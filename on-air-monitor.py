@@ -8,6 +8,10 @@ import os
 from pathlib import PosixPath
 from abc import ABC, abstractmethod
 import argparse
+import subprocess
+import re
+from queue import Queue, Empty
+from threading  import Thread
 
 
 class OnAirMonitor:
@@ -17,7 +21,7 @@ class OnAirMonitor:
     _OPACITY_DEFAULT = 0.6
     _OFF_AIR_SIGNAL = SIGUSR1
     _ON_AIR_SIGNAL = SIGUSR2
-    _REFRESH_AFTER_MILLISECONDS = 200
+    _REFRESH_AFTER_MILLISECONDS = 250
 
     PID_FILE_LOCATION = "~/.on-air-monitor.pid"
 
@@ -26,6 +30,7 @@ class OnAirMonitor:
         self._startup_canvas = StartupCanvas(self._root)
         self._on_air_canvas = OnAirCanvas(self._root)
         self._off_air_canvas = OffAirCanvas(self._root)
+        self._queue = Queue()
 
     def run(self):
         with OnAirMonitor.pid_file():
@@ -52,6 +57,7 @@ class OnAirMonitor:
         self._root.attributes('-alpha', args.opacity)
         self._root.resizable(False, False)
         self._root.title(self._PROGRAM_TITLE)
+        self._start_pulseaudio_change_listener()
 
         self._root.after(self._REFRESH_AFTER_MILLISECONDS, self._refresh_application)
         self._setup_signal_handler()
@@ -65,9 +71,71 @@ class OnAirMonitor:
         signal.signal(self._OFF_AIR_SIGNAL, self._handle_signal)
         signal.signal(self._ON_AIR_SIGNAL, self._handle_signal)
 
-    # force refresh
+
     def _refresh_application(self):
+        if self._pulseaudio_change_happend() == True:
+            source_to_mute_state = self._get_pulseaudio_sources_mute_state()
+            mute_state = source_to_mute_state[self._get_current_mic_name()]
+            if mute_state == "yes":
+                self._startup_canvas.hide()
+                self._on_air_canvas.hide()
+                self._off_air_canvas.show()
+
+            elif mute_state == "no":
+                self._startup_canvas.hide()
+                self._off_air_canvas.hide()
+                self._on_air_canvas.show()
+
         self._root.after(self._REFRESH_AFTER_MILLISECONDS, self._refresh_application)
+
+    def _get_current_mic_name(self):
+        out = subprocess.run(["pacmd", "info"], capture_output=True)
+        out_list = str(out.stdout, 'utf-8').splitlines()
+        return [ re.sub('^Default source name: ', '', line) for line in out_list 
+                    if line.startswith("Default source name: ") ][0]
+
+
+    def _start_pulseaudio_change_listener(self):
+        proc = subprocess.Popen(['pactl', 'subscribe'],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+        t = Thread(target=self._enqueue_output, args=(proc.stdout, self._queue))
+        t.daemon = True 
+        t.start()
+
+
+    def _enqueue_output(self, out, queue):
+        for raw_line in iter(out.readline, b''):
+            line = str(raw_line, 'utf-8')
+            if "Event 'change' on source" in line:
+                queue.put(line)
+        out.close()
+
+    def _pulseaudio_change_happend(self):
+        try:  
+            self._queue.get_nowait() 
+        except Empty:
+            return False
+        else: 
+            return True
+
+
+    def _get_pulseaudio_sources_mute_state(self):
+        out = subprocess.run(["pactl", "list", "sources"], capture_output=True)
+        out_list = str(out.stdout, 'utf-8').splitlines()
+    
+        source_to_mute_state = {}
+        last_seen_name = None
+
+        for line in out_list:
+            if '\tName:' in line:
+                last_seen_name = re.sub('^\tName: ', '', line)
+            elif '\tMute:' in line:
+                mute_state = re.sub('^\tMute: ', '', line)
+                source_to_mute_state[last_seen_name] = mute_state
+        
+        return source_to_mute_state
+
 
     def _handle_signal(self, signum, unused):
         if signum == self._OFF_AIR_SIGNAL:
@@ -145,6 +213,7 @@ class OffAirCanvas(BaseCanvas):
     def _draw_led(self, x, y):
         self._canvas.create_oval(x-3, y-3, x+3, y+3, fill='gray30', outline='gray30')
         self._canvas.create_oval(x-2, y-2, x+2, y+2, fill='gray40', outline='gray40')
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
