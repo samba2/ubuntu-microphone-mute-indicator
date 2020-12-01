@@ -1,0 +1,1 @@
+This directory contains diverse "Hello Worlds" in different languages and UI frameworks. These mini applications were used to determine which constellation used the least memory.
