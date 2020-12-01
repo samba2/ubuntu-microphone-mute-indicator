@@ -1,0 +1,7 @@
+[Desktop Entry]
+Icon=${HOME}/.local/share/microphone-mute-indicator/microphone-disabled-symbolic.svg
+Exec=${HOME}/.local/share/microphone-mute-indicator/microphone-mute-indicator.py
+Version=1.0
+Type=Application
+Name=Microphone Mute Indicator
+Categories=Application
