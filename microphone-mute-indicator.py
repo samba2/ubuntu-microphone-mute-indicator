@@ -7,6 +7,7 @@ import subprocess
 import re
 from queue import Queue, Empty
 from threading  import Thread
+from typing import List
 
 
 class MicrophoneMuteIndicator:
@@ -123,6 +124,51 @@ class MicrophoneMuteIndicator:
         out.close()
 
 
+class PulseAudioService:
+
+    PULSEAUDIO_MUTE_STATE_TO_BOOL = {
+        "yes" : True,
+        "no": False
+    }
+
+    # TODO contine with observer. queue still needed?
+    def __init__(self):
+        self._observers = []
+
+    def is_muted(self) -> bool:
+        return self.PULSEAUDIO_MUTE_STATE_TO_BOOL[self._lookup_pulseaudio_mute_state()]
+
+    # "yes" or "no"
+    def _lookup_pulseaudio_mute_state(self) -> str:
+        source_to_mute_state = self._get_pulseaudio_sources_mute_state()
+        return source_to_mute_state[self._get_current_mic_name()]
+
+
+    def _get_pulseaudio_sources_mute_state(self) -> dict:
+        source_to_mute_state = {}
+        last_seen_name = None
+
+        for line in self._run_command(["pactl", "list", "sources"]):
+            if '\tName:' in line:
+                last_seen_name = re.sub('^\tName: ', '', line)
+            elif '\tMute:' in line:
+                mute_state = re.sub('^\tMute: ', '', line)
+                source_to_mute_state[last_seen_name] = mute_state
+        
+        return source_to_mute_state
+
+    def _get_current_mic_name(self) ->str:
+
+        return [ re.sub('^Default source name: ', '', line) 
+                for line in self._run_command(["pacmd", "info"]) 
+                if line.startswith("Default source name: ") ][0]
+
+    def _run_command(self, command_list) -> List[str]:
+        out = subprocess.run(command_list, capture_output=True)
+        return str(out.stdout, 'utf-8').splitlines()
+
+
+
 class BaseCanvas(ABC):
     
     def __init__(self, root):
@@ -179,4 +225,5 @@ class MutedCanvas(BaseCanvas):
 
 
 if __name__ == "__main__":
-    MicrophoneMuteIndicator().run()    
+    # MicrophoneMuteIndicator().run() 
+    print(PulseAudioService().is_muted()  ) 
