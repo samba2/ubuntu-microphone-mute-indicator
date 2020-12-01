@@ -9,9 +9,9 @@ from queue import Queue, Empty
 from threading  import Thread
 
 
-class MicrophoneMonitor:
+class MicrophoneMuteIndicator:
 
-    _PROGRAM_TITLE = "Microphone Monitor"
+    _PROGRAM_TITLE = "Microphone Mute Indicator"
     _ALWAYS_ON_TOP_DEFAULT = True
     _OPACITY_DEFAULT = 0.6
     _REFRESH_AFTER_MILLISECONDS = 250
@@ -179,4 +179,4 @@ class MutedCanvas(BaseCanvas):
 
 
 if __name__ == "__main__":
-    MicrophoneMonitor().run()    
+    MicrophoneMuteIndicator().run()    
