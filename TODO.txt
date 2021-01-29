@@ -1,0 +1,3 @@
+- does not work with zoom -> works on default mic. check
+- icon in taskbar when started
+- is always on when unplugged + plugged in again from the docking station -> only restart helps
