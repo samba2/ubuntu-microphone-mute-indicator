@@ -23,10 +23,11 @@ on and toggle mic on/ off via the Ubuntu system microphone state.
 
 For this, I assigned the "Calculator" key (you can choose any other) to toggle:<br>
 ![](screenshot/keyboard_shortcut.png). <br>
-With this setup, I can mute/ unmute myself from any other application and don't have to switch back to the VC software which is really handy.
+With this setup, I can mute/ unmute myself from any application by just pressing the assigned hotkey.
+I don't have to switch back to the VC software to activate it - which is really handy.
 
 The issue now was that I didn't know in which state the system mic was. 
-Was it still "on" or did I already mute myself??? So I was looking for a simple way to permanently see the status of the system mic. I thought off an
+Was it still "on" or did I already mute myself?? So I was looking for a simple way to permanently see the status of the system mic. I thought off an
 "On Air" light of recording studios but simpler + in software.
 
 The result was this little script.
@@ -35,7 +36,7 @@ Feature
 -------
 - always on top
 - let the background application still shine through
-- requires core only Python3 (tested with 3.8)
+- requires only core Python3 (tested with 3.8)
 
 Usage
 -----
