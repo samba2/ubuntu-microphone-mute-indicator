@@ -38,6 +38,11 @@ Feature
 - let the background application still shine through
 - requires only core Python3 (tested with 3.8)
 
+Requirements
+------------
+To talk to the *pulseaudio* daemon, the *pulseaudio-utils* package must be installed. Background: the script uses `pactl` and `pacmd` for daemon communication.
+
+
 Usage
 -----
 
