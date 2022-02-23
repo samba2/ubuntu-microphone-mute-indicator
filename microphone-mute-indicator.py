@@ -12,7 +12,6 @@ from threading  import Thread
 class MicrophoneMuteIndicator:
 
     _PROGRAM_TITLE = "Microphone Mute Indicator"
-    _ALWAYS_ON_TOP_DEFAULT = True
     _OPACITY_DEFAULT = 0.6
     _REFRESH_AFTER_MILLISECONDS = 250
 
@@ -32,7 +31,7 @@ class MicrophoneMuteIndicator:
     def _initialize(self):
         args = self._parse_arguments()
         self._root.wait_visibility(self._root)
-        self._root.attributes('-topmost',args.always_on_top)
+        self._root.attributes('-topmost', True)
         self._root.attributes('-alpha', args.opacity)
         self._root.resizable(False, False)
         self._root.title(self._PROGRAM_TITLE)
@@ -47,7 +46,6 @@ class MicrophoneMuteIndicator:
 
     def _parse_arguments(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--always-on-top', nargs='?', const=self._ALWAYS_ON_TOP_DEFAULT, default=self._ALWAYS_ON_TOP_DEFAULT, type=bool)
         parser.add_argument('--opacity', nargs='?', const=self._OPACITY_DEFAULT, default=self._OPACITY_DEFAULT, type=float)
         return parser.parse_args()
 
