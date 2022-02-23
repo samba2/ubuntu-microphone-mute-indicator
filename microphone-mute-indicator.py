@@ -115,7 +115,8 @@ class MicrophoneMuteIndicator:
         t.start()
 
 
-    def _enqueue_output(self, out, queue):
+    @staticmethod
+    def _enqueue_output(out, queue):
         for raw_line in iter(out.readline, b''):
             line = str(raw_line, 'utf-8')
             if "Event 'change' on source" in line:

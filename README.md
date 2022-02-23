@@ -1,5 +1,10 @@
-https://gitlab.gnome.org/GNOME/adwaita-icon-theme/-/blob/master/Adwaita/scalable/status/microphone-disabled-symbolic.svg
+Little script for Linux to show the "mute" / "unmute" state of the system microphone.
 
-Targets:
+![](screenshot.png)
+
+
+Start on command line: `python3 microphone-mute-indicator.py`
+
+`make` targets:
 * install
 * uninstall
