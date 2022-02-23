@@ -46,3 +46,7 @@ you can install the script as local Ubuntu application running `make install`.
 You then should have an application called *Microphone Mute Indicator* available.
 
 Once started, I usually move the application in the upper right corner of my VC screen but you are free to position it wherever it suits you best.
+
+Command Line Option
+-------------------
+`--opacity` - how transparent should the application be. *0* is fully transparent, *1.0* is fully opaque. Range is between 0 - 1.0. Default is *0.6* 
